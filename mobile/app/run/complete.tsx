@@ -19,11 +19,13 @@ export default function RunCompleteScreen() {
     dist: string;
     dur: string;
     elev: string;
+    pace: string;
   }>();
 
   const dist = params.dist ?? "0";
   const dur = parseInt(params.dur ?? "0", 10);
   const elev = params.elev ?? "0";
+  const pace = parseInt(params.pace ?? "0", 10);
   const runId = params.runId;
 
   const squareAnim = useRef(new Animated.Value(0)).current;
@@ -85,9 +87,11 @@ export default function RunCompleteScreen() {
               <View style={styles.metricItem}>
                 <Text style={styles.metricLabel}>AVG PACE</Text>
                 <Text style={[styles.metricValue, { color: "#D4511E" }]}>
-                  {dur > 0 && parseFloat(dist) > 0
+                  {pace > 0
+                    ? paceSecondsToDisplay(pace)
+                    : dur > 0 && parseFloat(dist) > 0
                     ? paceSecondsToDisplay(Math.round(dur / parseFloat(dist)))
-                    : "0:00 /km"}
+                    : "--:-- /km"}
                 </Text>
               </View>
 

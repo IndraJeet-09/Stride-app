@@ -56,9 +56,7 @@ export default function LoginScreen() {
     setIsLoadingLogin(true);
     try {
       await login();
-    } catch (error) {
-      console.error("Login error:", error);
-    } finally {
+    } catch {} finally {
       setIsLoadingLogin(false);
     }
   };

@@ -9,43 +9,46 @@ import {
   Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Play, Pause, Square, Wifi, ChevronLeft, Mountain, Navigation, AlertTriangle } from "lucide-react-native";
-import { formatDuration } from "@/lib/utils";
-import { StrideAPI } from "@/lib/api/client";
-import { ApiRunCreated } from "@/lib/types";
+import {
+  Play,
+  Pause,
+  Square,
+  Wifi,
+  ChevronLeft,
+  Mountain,
+  Navigation,
+  AlertTriangle,
+} from "lucide-react-native";
+import { useRunTracker } from "@/services/run/useRunTracker";
+import {
+  formatPace,
+  formatElapsed,
+  kmString,
+} from "@/services/run/RunMetrics";
+import { RunFinishResult } from "@/services/run/types";
 import { triggerHaptic } from "@/lib/haptics";
 
 export default function RunScreen() {
   const router = useRouter();
-  const [isRunning, setIsRunning] = useState(true);
-  const [seconds, setSeconds] = useState(0);
-  const [distanceKm, setDistanceKm] = useState(0);
-  const [elevationM, setElevationM] = useState(0);
+  const { state, startRun, pauseRun, resumeRun, finishRun, discardRun } =
+    useRunTracker();
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const runRef = useRef<ApiRunCreated | null>(null);
-  const sequenceRef = useRef(1);
-  const pointsBufferRef = useRef<any[]>([]);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  const isActive = state.status === "running";
+  const isPaused = state.status === "paused";
+  const isError = state.status === "error";
+  const isStarting =
+    state.status === "starting" ||
+    state.status === "requesting_permission";
+
   useEffect(() => {
-    const startRun = async () => {
-      const clientRunId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const res = await StrideAPI.startRun({
-        clientRunId,
-        startedAt: new Date().toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
-      if (res.data) {
-        runRef.current = res.data;
-      }
-    };
     startRun();
   }, []);
 
   useEffect(() => {
-    if (isRunning) {
+    if (isActive) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -60,53 +63,44 @@ export default function RunScreen() {
           }),
         ])
       ).start();
-
-      intervalRef.current = setInterval(() => {
-        setSeconds((s) => s + 1);
-        setDistanceKm((d) => Math.round((d + 0.003) * 1000) / 1000);
-      }, 1000);
     } else {
       pulseAnim.stopAnimation();
       pulseAnim.setValue(1);
-      if (intervalRef.current) clearInterval(intervalRef.current);
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isRunning]);
+  }, [isActive]);
 
-  const toggleRunning = () => {
+  const toggleRunning = async () => {
     triggerHaptic("light");
-    setIsRunning((prev) => !prev);
+    if (isActive) {
+      await pauseRun();
+    } else if (isPaused) {
+      await resumeRun();
+    }
   };
 
   const handleRequestFinish = () => {
     triggerHaptic("medium");
-    setIsRunning(false);
     setShowConfirmFinish(true);
   };
 
   const handleCancelFinish = () => {
     triggerHaptic("light");
     setShowConfirmFinish(false);
-    setIsRunning(true);
   };
 
   const handleConfirmFinish = async () => {
     triggerHaptic("success");
     setShowConfirmFinish(false);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    const run = runRef.current;
-    if (run) {
-      await StrideAPI.finishRun(run.id, new Date().toISOString());
+    const result: RunFinishResult | null = await finishRun();
+    if (result) {
       router.replace({
         pathname: "/run/complete",
         params: {
-          runId: run.id,
-          dist: distanceKm.toFixed(2),
-          dur: String(seconds),
-          elev: String(elevationM),
+          runId: result.runId,
+          dist: (result.distanceMeters / 1000).toFixed(2),
+          dur: String(result.movingDurationSeconds),
+          elev: String(result.elevationGainMeters),
+          pace: String(result.averagePaceSecondsPerKm ?? 0),
         },
       });
     } else {
@@ -114,13 +108,70 @@ export default function RunScreen() {
     }
   };
 
-  const paceStr =
-    distanceKm > 0
-      ? (() => {
-          const secPerKm = Math.round(seconds / distanceKm);
-          return `${Math.floor(secPerKm / 60)}:${(secPerKm % 60).toString().padStart(2, "0")}`;
-        })()
-      : "0:00";
+  const handleBack = async () => {
+    triggerHaptic("light");
+    await discardRun();
+    router.back();
+  };
+
+  const distanceKm = state.distanceMeters / 1000;
+  const paceStr = formatPace(state.averagePaceSecondsPerKm);
+  const elapsedStr = formatElapsed(state.elapsedSeconds);
+  const calories = Math.round(distanceKm * 72);
+
+  const gpsAccuracy = state.gpsAccuracy;
+  let gpsColor = "#F59E0B";
+  let gpsText = "Searching...";
+  if (gpsAccuracy !== null && gpsAccuracy <= 30) {
+    gpsColor = "#10B981";
+    gpsText = "GPS Good";
+  } else if (gpsAccuracy !== null && gpsAccuracy > 30) {
+    gpsColor = "#EF4444";
+    gpsText = "GPS Weak";
+  } else if (isActive || isPaused) {
+    gpsColor = "#10B981";
+    gpsText = "GPS Active";
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.topBar}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleBack}
+              style={styles.backButton}
+            >
+              <ChevronLeft size={22} color="#A1A1AA" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.errorContainer}>
+            <AlertTriangle size={36} color="#F59E0B" />
+            <Text style={styles.errorTitle}>Unable to Start Run</Text>
+            <Text style={styles.errorMessage}>{state.error}</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                triggerHaptic("light");
+                startRun();
+              }}
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryButtonText}>TRY AGAIN</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleBack}
+              style={styles.cancelButton}
+            >
+              <Text style={styles.cancelButtonText}>GO BACK</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -128,10 +179,7 @@ export default function RunScreen() {
         <View style={styles.topBar}>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => {
-              triggerHaptic("light");
-              router.back();
-            }}
+            onPress={handleBack}
             style={styles.backButton}
             accessibilityLabel="Exit run tracking"
           >
@@ -139,12 +187,14 @@ export default function RunScreen() {
           </TouchableOpacity>
 
           <View style={styles.gpsPill}>
-            <Wifi size={13} color="#10B981" />
-            <Text style={styles.gpsText}>GPS Active</Text>
+            <Wifi size={13} color={gpsColor} />
+            <Text style={[styles.gpsText, { color: gpsColor }]}>{gpsText}</Text>
           </View>
 
           <View style={styles.streakPill}>
-            <Text style={styles.streakText}>RUNNING</Text>
+            <Text style={styles.streakText}>
+              {isStarting ? "STARTING" : isActive ? "RUNNING" : isPaused ? "PAUSED" : "SAVING"}
+            </Text>
           </View>
         </View>
 
@@ -153,20 +203,28 @@ export default function RunScreen() {
             style={[
               styles.statusDot,
               {
-                backgroundColor: isRunning ? "#D4511E" : "#F59E0B",
-                opacity: isRunning ? pulseAnim : 1,
+                backgroundColor: isActive ? "#D4511E" : "#F59E0B",
+                opacity: isActive ? pulseAnim : 1,
               },
             ]}
           />
           <Text style={styles.statusText}>
-            {isRunning ? "RUNNING IN PROGRESS" : "PAUSED"}
+            {isActive
+              ? "RUNNING IN PROGRESS"
+              : isPaused
+              ? "PAUSED"
+              : isStarting
+              ? "ACQUIRING GPS..."
+              : "SAVING RUN..."}
           </Text>
         </View>
 
         <View style={styles.hudBody}>
           <View style={styles.distanceBlock}>
             <Text style={styles.distanceValue}>
-              {distanceKm < 10 ? `0${distanceKm.toFixed(2)}` : distanceKm.toFixed(2)}
+              {distanceKm < 10
+                ? `0${kmString(state.distanceMeters)}`
+                : kmString(state.distanceMeters)}
             </Text>
             <Text style={styles.distanceUnit}>KM</Text>
           </View>
@@ -185,7 +243,7 @@ export default function RunScreen() {
 
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>ELAPSED</Text>
-              <Text style={styles.metricValue}>{formatDuration(seconds)}</Text>
+              <Text style={styles.metricValue}>{elapsedStr}</Text>
               <Text style={styles.metricUnit}>TIME</Text>
             </View>
           </View>
@@ -193,10 +251,10 @@ export default function RunScreen() {
           <View style={styles.telemetryPill}>
             <View style={styles.telemetryItem}>
               <Mountain size={13} color="#A1A1AA" />
-              <Text style={styles.telemetryText}>↑ {elevationM} m</Text>
+              <Text style={styles.telemetryText}>↑ 0 m</Text>
             </View>
             <View style={styles.telemetryDivider} />
-            <Text style={styles.telemetryText}>{Math.round(distanceKm * 72)} kcal</Text>
+            <Text style={styles.telemetryText}>{calories} kcal</Text>
           </View>
         </View>
 
@@ -205,13 +263,14 @@ export default function RunScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={toggleRunning}
+              disabled={isStarting}
               style={[
                 styles.actionButton,
-                isRunning ? styles.pauseButton : styles.resumeButton,
+                isActive ? styles.pauseButton : styles.resumeButton,
               ]}
-              accessibilityLabel={isRunning ? "Pause Run" : "Resume Run"}
+              accessibilityLabel={isActive ? "Pause Run" : "Resume Run"}
             >
-              {isRunning ? (
+              {isActive ? (
                 <>
                   <Pause size={20} color="#F5F5F5" />
                   <Text style={styles.actionTextWhite}>PAUSE</Text>
@@ -227,6 +286,7 @@ export default function RunScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleRequestFinish}
+              disabled={isStarting}
               style={[styles.actionButton, styles.finishButton]}
               accessibilityLabel="Finish Run"
             >
@@ -254,8 +314,12 @@ export default function RunScreen() {
               </Text>
 
               <View style={styles.modalSummaryPill}>
-                <Text style={styles.modalSummaryDist}>{distanceKm.toFixed(2)} km</Text>
-                <Text style={styles.modalSummaryDur}>{formatDuration(seconds)}</Text>
+                <Text style={styles.modalSummaryDist}>
+                  {kmString(state.distanceMeters)} km
+                </Text>
+                <Text style={styles.modalSummaryDur}>
+                  {formatElapsed(state.elapsedSeconds)}
+                </Text>
               </View>
 
               <View style={styles.modalActions}>
@@ -322,7 +386,6 @@ const styles = StyleSheet.create({
   },
   gpsText: {
     fontSize: 12,
-    color: "#34D399",
     fontFamily: "monospace",
     fontWeight: "600",
   },
@@ -502,6 +565,51 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "monospace",
     letterSpacing: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  errorTitle: {
+    color: "#F5F5F5",
+    fontSize: 22,
+    fontWeight: "800",
+    fontFamily: "monospace",
+    textAlign: "center",
+  },
+  errorMessage: {
+    color: "#A1A1AA",
+    fontSize: 14,
+    fontFamily: "monospace",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  retryButton: {
+    backgroundColor: "#C2410C",
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: "monospace",
+    letterSpacing: 1,
+  },
+  cancelButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: "#71717A",
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: "monospace",
   },
   modalOverlay: {
     flex: 1,

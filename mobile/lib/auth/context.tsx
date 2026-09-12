@@ -52,12 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ? AuthSession.makeRedirectUri({ path: "callback" })
     : AuthSession.makeRedirectUri({ scheme: "stride", path: "callback" });
 
-  useEffect(() => {
-    console.log("[Auth0] Platform:", Platform.OS);
-    console.log("[Auth0] Redirect URI:", redirectUri);
-    console.log("[Auth0] Client ID:", auth0Config.clientId);
-  }, [redirectUri]);
-
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: auth0Config.clientId,
@@ -89,28 +83,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await setUserInfo(userInfo);
       setUser(userInfo);
-    } catch (error) {
-      console.error("Failed to decode token:", error);
-    }
+    } catch {}
 
     setIsAuthenticated(true);
     setIsLoading(false);
   }, []);
 
-  // Handle auth response
   useEffect(() => {
     if (!response) return;
-
-    console.log("[Auth0] Response type:", response.type);
 
     if (response.type === "success") {
       const { authentication } = response;
       if (authentication?.accessToken) {
-        console.log("[Auth0] Token from authentication object");
         handleTokenReceived(authentication.accessToken, authentication.refreshToken || undefined);
       } else if (response.params?.code && request) {
-        // Web: manual token exchange with PKCE code verifier
-        console.log("[Auth0] Exchanging auth code for tokens...");
         const codeVerifier = request.codeVerifier;
         fetch(`https://${auth0Config.domain}/oauth/token`, {
           method: "POST",
@@ -125,48 +111,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
           .then((r) => r.json())
           .then((data) => {
-            console.log("[Auth0] Token exchange result:", data.access_token ? "OK" : data.error || "failed");
             if (data.access_token) {
               handleTokenReceived(data.access_token, data.refresh_token);
             } else {
-              console.error("[Auth0] Token exchange error:", data);
               setIsLoading(false);
             }
           })
-          .catch((err) => {
-            console.error("[Auth0] Token exchange failed:", err);
+          .catch(() => {
             setIsLoading(false);
           });
       } else {
-        console.error("[Auth0] No accessToken and no auth code to exchange");
         setIsLoading(false);
       }
     } else if (response.type === "error") {
-      console.error("[Auth0] Auth error:", response.error?.message, response.error);
       setIsLoading(false);
     } else {
-      console.log("[Auth0] Auth dismissed:", response.type);
       setIsLoading(false);
     }
   }, [response, request]);
 
   const login = useCallback(async () => {
     if (!request) {
-      console.error("[Auth0] Request not ready");
       setIsLoading(false);
       return;
     }
     try {
-      console.log("[Auth0] Starting auth, redirectUri:", redirectUri);
-      const result = await promptAsync();
-      console.log("[Auth0] promptAsync result:", result.type);
-    } catch (error) {
-      console.error("[Auth0] Login failed:", error);
+      await promptAsync();
+    } catch {
       setIsLoading(false);
     }
   }, [request, promptAsync, redirectUri]);
 
-  // Load stored auth on mount
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
@@ -200,9 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(storedUser);
           setIsAuthenticated(true);
         }
-      } catch (error) {
-        console.error("Failed to load stored auth:", error);
-      } finally {
+      } catch {} finally {
         setIsLoading(false);
       }
     };
@@ -230,8 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return false;
-    } catch (error) {
-      console.error("Token refresh failed:", error);
+    } catch {
       return false;
     }
   };
@@ -245,9 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const logoutUrl = `https://${auth0Config.domain}/v2/logout?client_id=${auth0Config.clientId}&returnTo=${encodeURIComponent(redirectUri)}`;
       await WebBrowser.openBrowserAsync(logoutUrl);
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+    } catch {}
   }, [redirectUri]);
 
   const getValidToken = useCallback(async (): Promise<string | null> => {

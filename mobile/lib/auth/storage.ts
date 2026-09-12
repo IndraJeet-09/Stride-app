@@ -32,9 +32,7 @@ export async function setAccessToken(token: string): Promise<void> {
       return;
     }
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
-  } catch (error) {
-    console.error("Failed to store access token:", error);
-  }
+  } catch {}
 }
 
 export async function getRefreshToken(): Promise<string | null> {
@@ -53,9 +51,7 @@ export async function setRefreshToken(token: string): Promise<void> {
       return;
     }
     await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
-  } catch (error) {
-    console.error("Failed to store refresh token:", error);
-  }
+  } catch {}
 }
 
 export async function getUserInfo(): Promise<StoredUserInfo | null> {
@@ -80,9 +76,7 @@ export async function setUserInfo(info: StoredUserInfo): Promise<void> {
       return;
     }
     await SecureStore.setItemAsync(USER_INFO_KEY, value);
-  } catch (error) {
-    console.error("Failed to store user info:", error);
-  }
+  } catch {}
 }
 
 export async function clearAllAuth(): Promise<void> {
@@ -98,7 +92,5 @@ export async function clearAllAuth(): Promise<void> {
       SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
       SecureStore.deleteItemAsync(USER_INFO_KEY),
     ]);
-  } catch (error) {
-    console.error("Failed to clear auth data:", error);
-  }
+  } catch {}
 }
