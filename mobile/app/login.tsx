@@ -8,13 +8,11 @@ import {
   Animated,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { Play, ArrowRight } from "lucide-react-native";
 import { useAuth } from "@/lib/auth/context";
 import { triggerHaptic } from "@/lib/haptics";
 
 export default function LoginScreen() {
-  const router = useRouter();
   const { isAuthenticated, isLoading, login } = useAuth();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -27,11 +25,7 @@ export default function LoginScreen() {
     }).start();
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace("/(tabs)");
-    }
-  }, [isAuthenticated]);
+
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {

@@ -57,8 +57,12 @@ export function startLocationTracking(
   return {
     stop: () => {
       stopped = true;
-      subscription?.remove();
-      subscription = null;
+      if (subscription) {
+        try {
+          subscription.remove();
+        } catch {}
+        subscription = null;
+      }
     },
   };
 }
