@@ -78,13 +78,16 @@ export async function GET(req: NextRequest) {
         recentRun: recentRun
           ? {
               id: recentRun.id,
-              title: recentRun.title,
+              name: recentRun.name,
+              title: recentRun.name,
               distanceMeters: recentRun.distanceMeters,
-              durationSeconds: recentRun.durationSeconds,
+              durationSeconds: recentRun.movingDurationSeconds,
+              movingDurationSeconds: recentRun.movingDurationSeconds,
               averagePaceSecondsPerKm: recentRun.averagePaceSecondsPerKm,
-              startedAt: recentRun.startedAt,
               elevationGainMeters: recentRun.elevationGainMeters,
               calories: recentRun.calories,
+              startedAt: recentRun.startedAt,
+              stravaUrl: recentRun.stravaUrl,
             }
           : null,
         contributionPreview,

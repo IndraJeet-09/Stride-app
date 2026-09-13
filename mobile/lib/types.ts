@@ -113,15 +113,25 @@ export interface ApiMonthly {
 
 export interface ApiRunSummary {
   id: string;
+  name: string;
   title: string;
   status?: string;
+  activityType?: string;
+  sportType?: string;
   startedAt: string;
   endedAt?: string;
   distanceMeters: number;
   durationSeconds: number;
+  movingDurationSeconds?: number;
+  elapsedTimeSeconds?: number;
   averagePaceSecondsPerKm: number;
   elevationGainMeters: number;
   calories: number;
+  averageHeartrate?: number;
+  maxHeartrate?: number;
+  trainer?: boolean;
+  commute?: boolean;
+  stravaUrl?: string;
   visibility?: string;
 }
 
@@ -158,24 +168,29 @@ export interface ApiContributionsResponse {
 
 export interface ApiRunDetail {
   id: string;
+  name: string;
   title: string;
   status: string;
+  activityType?: string;
+  sportType?: string;
   startedAt: string;
   endedAt?: string;
+  startedAtLocal?: string;
   timezone: string;
   distanceMeters: number;
   durationSeconds: number;
   movingDurationSeconds: number;
+  elapsedTimeSeconds: number;
   averagePaceSecondsPerKm: number;
   averageSpeedMps: number;
   maxSpeedMps: number;
   elevationGainMeters: number;
-  elevationLossMeters: number;
   calories: number;
-  startLatitude?: number;
-  startLongitude?: number;
-  endLatitude?: number;
-  endLongitude?: number;
+  averageHeartrate?: number;
+  maxHeartrate?: number;
+  trainer?: boolean;
+  commute?: boolean;
+  stravaUrl?: string;
   visibility: string;
   createdAt: string;
   updatedAt: string;
@@ -226,4 +241,18 @@ export interface ApiRunsResponse {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+}
+
+// --- Strava integration types ---
+
+export interface ApiStravaConnection {
+  connected: boolean;
+  athlete: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    profileUrl: string | null;
+  } | null;
+  lastSyncedAt: string | null;
+  syncStatus: string;
 }

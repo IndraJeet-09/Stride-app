@@ -29,9 +29,9 @@ export interface PersonalRecords {
 
 // Get user statistics
 export async function getUserStats(userId: string): Promise<UserStats> {
-  // Get all completed runs
+  // Get all runs
   const completedRuns = await db.query.runs.findMany({
-    where: and(eq(runs.userId, userId), eq(runs.status, "completed")),
+    where: eq(runs.userId, userId),
   });
 
   // Calculate basic stats
@@ -120,7 +120,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 // Get personal records
 export async function getPersonalRecords(userId: string): Promise<PersonalRecords> {
   const completedRuns = await db.query.runs.findMany({
-    where: and(eq(runs.userId, userId), eq(runs.status, "completed")),
+    where: eq(runs.userId, userId),
   });
 
   // Calculate 1km pace (find best km split)

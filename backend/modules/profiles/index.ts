@@ -49,7 +49,6 @@ export async function getPublicProfile(
   const recentRuns = await db.query.runs.findMany({
     where: and(
       eq(runs.userId, user.id),
-      eq(runs.status, "completed"),
       eq(runs.visibility, "public")
     ),
     orderBy: desc(runs.startedAt),
@@ -71,7 +70,7 @@ export async function getPublicProfile(
     },
     recentRuns: recentRuns.map((run) => ({
       id: run.id,
-      title: run.title,
+      title: run.name,
       distanceMeters: run.distanceMeters,
       startedAt: run.startedAt,
     })),

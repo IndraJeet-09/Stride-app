@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Flame, Clock, Navigation, ChevronRight, Sparkles } from "lucide-react-native";
+import { Flame, Clock, Navigation, ChevronRight, Sparkles, Zap } from "lucide-react-native";
 import { StreakCard } from "@/components/home/StreakCard";
 import { WeeklyGrid } from "@/components/home/WeeklyGrid";
 import { ContributionGraph } from "@/components/contribution/ContributionGraph";
@@ -18,6 +19,7 @@ import {
   ApiDashboard,
   ApiContributionsResponse,
   ApiRunSummary,
+  ApiStravaConnection,
 } from "@/lib/types";
 import {
   metersToKmString,
@@ -65,17 +67,20 @@ export default function HomeScreen() {
   const [dashboard, setDashboard] = useState<ApiDashboard | null>(null);
   const [contributions, setContributions] = useState<ApiContributionsResponse | null>(null);
   const [runs, setRuns] = useState<ApiRunSummary[]>([]);
+  const [stravaConnection, setStravaConnection] = useState<ApiStravaConnection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    const [dashRes, contribRes, runsRes] = await Promise.all([
+    const [dashRes, contribRes, runsRes, stravaRes] = await Promise.all([
       StrideAPI.getDashboard(),
       StrideAPI.getContributions(new Date().getFullYear()),
       StrideAPI.getRuns({ limit: 5, sort: "desc" }),
+      StrideAPI.getStravaConnection(),
     ]);
 
     if (dashRes.error) {
@@ -92,12 +97,55 @@ export default function HomeScreen() {
       setRuns(runsRes.data);
     }
 
+    if (stravaRes.data) {
+      setStravaConnection(stravaRes.data);
+    }
+
     setLoading(false);
   }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Handle deep link callback from Strava OAuth
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      const url = event.url;
+      setConnecting(false); // Always reset connecting state on callback
+      if (url.includes("strava_connected=true")) {
+        // Refresh data after successful connection
+        fetchData();
+      } else if (url.includes("strava_error=")) {
+        const errorMatch = url.match(/strava_error=([^&]+)/);
+        if (errorMatch) {
+          const errorType = errorMatch[1];
+          if (errorType === "access_denied") {
+            setError("Strava connection was cancelled.");
+          } else {
+            setError("Failed to connect to Strava. Please try again.");
+          }
+        }
+      }
+    };
+
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+    return () => subscription.remove();
+  }, [fetchData]);
+
+  const handleConnectStrava = async () => {
+    triggerHaptic("light");
+    setConnecting(true);
+
+    const result = await StrideAPI.connectStrava();
+    if (result.data?.authUrl) {
+      Linking.openURL(result.data.authUrl);
+      // Don't reset connecting - the deep link handler will refresh data
+    } else if (result.error) {
+      setError("Failed to start Strava connection. Please try again.");
+      setConnecting(false);
+    }
+  };
 
   const handleRunPress = (runId: string) => {
     triggerHaptic("light");
@@ -151,6 +199,38 @@ export default function HomeScreen() {
             <Flame size={22} color="#EA580C" />
           </View>
         </View>
+
+        {/* Connect Strava CTA - shown when not connected */}
+        {stravaConnection && !stravaConnection.connected && (
+          <View style={styles.stravaSection}>
+            <TouchableOpacity
+              style={styles.connectStravaBtn}
+              onPress={handleConnectStrava}
+              disabled={connecting}
+              activeOpacity={0.8}
+            >
+              {connecting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Zap size={18} color="#FFFFFF" />
+                  <Text style={styles.connectStravaText}>Connect Strava</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.stravaHint}>
+              Import your running activities from Strava
+            </Text>
+          </View>
+        )}
+
+        {/* Sync status indicator */}
+        {stravaConnection?.connected && stravaConnection.syncStatus === "syncing" && (
+          <View style={styles.syncBanner}>
+            <ActivityIndicator size="small" color="#EA580C" />
+            <Text style={styles.syncBannerText}>Syncing your activities...</Text>
+          </View>
+        )}
 
         <View style={styles.body}>
           <StreakCard
@@ -399,5 +479,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "monospace",
     fontWeight: "700",
+  },
+  stravaSection: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  connectStravaBtn: {
+    backgroundColor: "#FC4C02",
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  connectStravaText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+    fontFamily: "monospace",
+  },
+  stravaHint: {
+    color: "#71717A",
+    fontSize: 12,
+    fontFamily: "monospace",
+    textAlign: "center",
+  },
+  syncBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#1C1C20",
+    marginHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  syncBannerText: {
+    color: "#A1A1AA",
+    fontSize: 13,
+    fontFamily: "monospace",
+    fontWeight: "600",
   },
 });

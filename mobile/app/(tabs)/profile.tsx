@@ -8,14 +8,16 @@ import {
   Share,
   StyleSheet,
   ActivityIndicator,
+  Linking,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileStats } from "@/components/profile/ProfileStats";
-import { Share2, Clock, Navigation, Mountain, ChevronRight, History, LogOut } from "lucide-react-native";
+import { Share2, Clock, Navigation, Mountain, ChevronRight, History, LogOut, Zap, Unplug } from "lucide-react-native";
 import { StrideAPI } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
-import { ApiUser, ApiStatsOverview, ApiRunSummary } from "@/lib/types";
+import { ApiUser, ApiStatsOverview, ApiRunSummary, ApiStravaConnection } from "@/lib/types";
 import {
   metersToKmString,
   paceSecondsToDisplay,
@@ -30,19 +32,23 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<ApiUser | null>(null);
   const [stats, setStats] = useState<ApiStatsOverview | null>(null);
   const [runs, setRuns] = useState<ApiRunSummary[]>([]);
+  const [stravaConnection, setStravaConnection] = useState<ApiStravaConnection | null>(null);
   const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [meRes, statsRes, runsRes] = await Promise.all([
+    const [meRes, statsRes, runsRes, stravaRes] = await Promise.all([
       StrideAPI.getMe(),
       StrideAPI.getStats(),
       StrideAPI.getRuns({ limit: 20, sort: "desc" }),
+      StrideAPI.getStravaConnection(),
     ]);
 
     if (meRes.data?.user) setUser(meRes.data.user);
     if (statsRes.data) setStats(statsRes.data);
     if (runsRes.data) setRuns(runsRes.data);
+    if (stravaRes.data) setStravaConnection(stravaRes.data);
     setLoading(false);
   }, []);
 
@@ -53,6 +59,38 @@ export default function ProfileScreen() {
   const handleRunPress = (runId: string) => {
     triggerHaptic("light");
     router.push(`/runs/${runId}`);
+  };
+
+  const handleConnectStrava = async () => {
+    triggerHaptic("light");
+    const result = await StrideAPI.connectStrava();
+    if (result.data?.authUrl) {
+      Linking.openURL(result.data.authUrl);
+    }
+  };
+
+  const handleDisconnectStrava = async () => {
+    triggerHaptic("medium");
+    Alert.alert(
+      "Disconnect Strava",
+      "This will stop syncing new activities. Your existing data will be preserved.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: async () => {
+            setDisconnecting(true);
+            const result = await StrideAPI.disconnectStrava();
+            if (result.data?.disconnected) {
+              setStravaConnection(null);
+              fetchData();
+            }
+            setDisconnecting(false);
+          },
+        },
+      ]
+    );
   };
 
   const handleShare = async () => {
@@ -91,6 +129,55 @@ export default function ProfileScreen() {
         <View style={styles.body}>
           <ProfileHeader user={user} stats={stats} />
           <ProfileStats stats={stats} />
+
+          <View style={styles.horizontalDivider} />
+
+          {/* Strava Connection Section */}
+          <View style={styles.stravaSection}>
+            <View style={styles.stravaHeader}>
+              <Zap size={16} color="#FC4C02" />
+              <Text style={styles.sectionTitle}>STRAVA</Text>
+            </View>
+
+            {stravaConnection?.connected ? (
+              <View style={styles.stravaConnectedCard}>
+                <View style={styles.stravaInfo}>
+                  <Text style={styles.stravaStatus}>Connected to Strava</Text>
+                  {stravaConnection.lastSyncedAt && (
+                    <Text style={styles.stravaSynced}>
+                      Last synced: {formatDate(stravaConnection.lastSyncedAt)}
+                    </Text>
+                  )}
+                  {stravaConnection.syncStatus === "syncing" && (
+                    <Text style={styles.stravaSyncing}>Syncing...</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={handleDisconnectStrava}
+                  disabled={disconnecting}
+                  style={styles.disconnectBtn}
+                >
+                  {disconnecting ? (
+                    <ActivityIndicator size="small" color="#F87171" />
+                  ) : (
+                    <>
+                      <Unplug size={14} color="#F87171" />
+                      <Text style={styles.disconnectText}>Disconnect</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.connectStravaBtn}
+                onPress={handleConnectStrava}
+                activeOpacity={0.8}
+              >
+                <Zap size={16} color="#FFFFFF" />
+                <Text style={styles.connectStravaText}>Connect Strava</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           <View style={styles.horizontalDivider} />
 
@@ -348,5 +435,74 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontFamily: "monospace",
     letterSpacing: 1.2,
+  },
+  stravaSection: {
+    gap: 12,
+  },
+  stravaHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  stravaConnectedCard: {
+    backgroundColor: "#111111",
+    borderWidth: 1.5,
+    borderColor: "#262626",
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  stravaInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  stravaStatus: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "monospace",
+    fontWeight: "700",
+  },
+  stravaSynced: {
+    color: "#71717A",
+    fontSize: 12,
+    fontFamily: "monospace",
+  },
+  stravaSyncing: {
+    color: "#EA580C",
+    fontSize: 12,
+    fontFamily: "monospace",
+    fontWeight: "600",
+  },
+  disconnectBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#1C110C",
+  },
+  disconnectText: {
+    color: "#F87171",
+    fontSize: 12,
+    fontFamily: "monospace",
+    fontWeight: "700",
+  },
+  connectStravaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#FC4C02",
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  connectStravaText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+    fontFamily: "monospace",
   },
 });

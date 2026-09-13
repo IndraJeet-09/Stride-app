@@ -83,6 +83,17 @@ export const StrideAPI = {
   getPublicProfile: (username: string) =>
     apiRequest(`/users/${username}`),
 
+  // Strava integration
+  getStravaConnection: () => apiRequest("/integrations/strava"),
+
+  connectStrava: () => apiRequest("/integrations/strava/connect"),
+
+  disconnectStrava: () =>
+    apiRequest("/integrations/strava", { method: "DELETE" }),
+
+  syncStrava: () =>
+    apiRequest("/integrations/strava/sync", { method: "POST" }),
+
   requestExport: () => apiRequest("/account/export"),
   requestDeletion: () =>
     apiRequest("/account/deletion", { method: "DELETE" }),

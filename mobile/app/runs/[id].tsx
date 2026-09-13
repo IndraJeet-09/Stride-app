@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Calendar, Clock, Navigation, Mountain, Flame } from "lucide-react-native";
+import { ChevronLeft, Calendar, Clock, Navigation, Mountain, Flame, Heart, ExternalLink } from "lucide-react-native";
 import { StrideAPI } from "@/lib/api/client";
 import { ApiRunDetail } from "@/lib/types";
 import {
@@ -138,10 +139,34 @@ export default function RunDetailScreen() {
             <View style={styles.vertDivider} />
 
             <View style={styles.statCol}>
-              <Text style={styles.statLabel}>ENERGY</Text>
-              <Text style={styles.statVal}>{run.calories} kcal</Text>
+              {run.averageHeartrate ? (
+                <>
+                  <View style={styles.statIconRow}>
+                    <Heart size={12} color="#71717A" />
+                    <Text style={styles.statLabel}>AVG HR</Text>
+                  </View>
+                  <Text style={styles.statVal}>{Math.round(run.averageHeartrate)} bpm</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.statLabel}>ENERGY</Text>
+                  <Text style={styles.statVal}>{run.calories} kcal</Text>
+                </>
+              )}
             </View>
           </View>
+
+          {/* View on Strava link */}
+          {run.stravaUrl && (
+            <TouchableOpacity
+              style={styles.stravaLinkBtn}
+              onPress={() => Linking.openURL(run.stravaUrl!)}
+              activeOpacity={0.7}
+            >
+              <ExternalLink size={16} color="#FC4C02" />
+              <Text style={styles.stravaLinkText}>View on Strava</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -275,5 +300,23 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: "#222222",
+  },
+  stravaLinkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#1C110C",
+    borderWidth: 1,
+    borderColor: "#FC4C0233",
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  stravaLinkText: {
+    color: "#FC4C02",
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: "monospace",
   },
 });
