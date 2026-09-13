@@ -3,9 +3,6 @@ import {
   users,
   userSettings,
   runs,
-  runTrackPoints,
-  runPausePeriods,
-  runSplits,
   dailyActivities,
 } from "./schema";
 import { nanoid } from "nanoid";
@@ -42,7 +39,6 @@ async function seed() {
   const runsData = [
     {
       id: `run_${nanoid()}`,
-      clientRunId: "run-sep12-1",
       status: "completed" as const,
       startedAt: new Date("2026-09-12T06:45:00Z"),
       endedAt: new Date("2026-09-12T07:27:31Z"),
@@ -65,7 +61,6 @@ async function seed() {
     },
     {
       id: `run_${nanoid()}`,
-      clientRunId: "run-sep11-1",
       status: "completed" as const,
       startedAt: new Date("2026-09-11T17:30:00Z"),
       endedAt: new Date("2026-09-11T18:15:00Z"),
@@ -88,7 +83,6 @@ async function seed() {
     },
     {
       id: `run_${nanoid()}`,
-      clientRunId: "run-sep10-1",
       status: "completed" as const,
       startedAt: new Date("2026-09-10T06:00:00Z"),
       endedAt: new Date("2026-09-10T07:30:00Z"),
@@ -111,7 +105,6 @@ async function seed() {
     },
     {
       id: `run_${nanoid()}`,
-      clientRunId: "run-sep9-1",
       status: "completed" as const,
       startedAt: new Date("2026-09-09T06:30:00Z"),
       endedAt: new Date("2026-09-09T07:15:00Z"),
@@ -134,7 +127,6 @@ async function seed() {
     },
     {
       id: `run_${nanoid()}`,
-      clientRunId: "run-sep8-1",
       status: "completed" as const,
       startedAt: new Date("2026-09-08T18:00:00Z"),
       endedAt: new Date("2026-09-08T18:45:00Z"),

@@ -65,50 +65,20 @@ export const StrideAPI = {
   getContributions: (year: number) => apiRequest(`/contributions?year=${year}`),
   getStats: () => apiRequest("/stats/overview"),
 
-  startRun: (body: {
-    clientRunId: string;
-    startedAt?: string;
-    timezone?: string;
-    title?: string;
-  }) => apiRequest("/runs", { method: "POST", body: JSON.stringify(body) }),
-
   getRuns: (params?: {
     page?: number;
     limit?: number;
-    status?: string;
     sort?: "asc" | "desc";
   }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set("page", params.page.toString());
     if (params?.limit) searchParams.set("limit", params.limit.toString());
-    if (params?.status) searchParams.set("status", params.status);
     if (params?.sort) searchParams.set("sort", params.sort);
     const query = searchParams.toString();
     return apiRequest(`/runs${query ? `?${query}` : ""}`);
   },
 
   getRunDetail: (id: string) => apiRequest(`/runs/${id}`),
-
-  pauseRun: (runId: string) =>
-    apiRequest(`/runs/${runId}/pause`, { method: "POST" }),
-
-  resumeRun: (runId: string) =>
-    apiRequest(`/runs/${runId}/resume`, { method: "POST" }),
-
-  finishRun: (runId: string, endedAt?: string) =>
-    apiRequest(`/runs/${runId}/finish`, {
-      method: "POST",
-      body: JSON.stringify({ endedAt }),
-    }),
-
-  discardRun: (runId: string) =>
-    apiRequest(`/runs/${runId}/discard`, { method: "POST" }),
-
-  ingestTrackPoints: (runId: string, points: any[]) =>
-    apiRequest(`/runs/${runId}/track-points`, {
-      method: "POST",
-      body: JSON.stringify({ points }),
-    }),
 
   getPublicProfile: (username: string) =>
     apiRequest(`/users/${username}`),

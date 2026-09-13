@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/middleware/auth";
 import { getOrCreateUser } from "@/modules/auth";
 import { getRunById } from "@/modules/runs";
-import { handleApiError, runNotFoundError } from "@/lib/errors";
+import { notFoundError, handleApiError } from "@/lib/errors";
 import { createRequestLogger } from "@/lib/logging";
 
 // GET /api/v1/runs/:id - Get run detail
@@ -23,7 +23,7 @@ export async function GET(
     // Get run with ownership check
     const run = await getRunById(user.id, id);
     if (!run) {
-      throw runNotFoundError();
+      throw notFoundError("Run not found");
     }
 
     logger.info({ runId: run.id, userId: user.id }, "Run fetched");
@@ -49,8 +49,6 @@ export async function GET(
         startLongitude: run.startLongitude,
         endLatitude: run.endLatitude,
         endLongitude: run.endLongitude,
-        routePolyline: run.routePolyline,
-        notes: run.notes,
         visibility: run.visibility,
         createdAt: run.createdAt,
         updatedAt: run.updatedAt,

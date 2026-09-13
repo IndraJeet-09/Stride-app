@@ -11,13 +11,6 @@ import {
 } from "drizzle-orm/pg-core";
 
 // Enums
-export const runStatusEnum = pgEnum("run_status", [
-  "recording",
-  "paused",
-  "completed",
-  "discarded",
-]);
-
 export const unitSystemEnum = pgEnum("unit_system", ["metric", "imperial"]);
 
 export const visibilityEnum = pgEnum("visibility", ["private", "public"]);
@@ -83,7 +76,7 @@ export const userSettings = pgTable(
   }
 );
 
-// Runs table
+// Runs table (stores Strava activity data)
 export const runs = pgTable(
   "runs",
   {
@@ -91,8 +84,8 @@ export const runs = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    clientRunId: text("client_run_id").notNull(),
-    status: runStatusEnum("status").notNull().default("recording"),
+    stravaActivityId: text("strava_activity_id"),
+    status: text("status").notNull().default("completed"),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
     timezone: text("timezone").notNull().default("UTC"),
@@ -114,8 +107,6 @@ export const runs = pgTable(
     startLongitude: doublePrecision("start_longitude"),
     endLatitude: doublePrecision("end_latitude"),
     endLongitude: doublePrecision("end_longitude"),
-    routePolyline: text("route_polyline"),
-    notes: text("notes"),
     visibility: visibilityEnum("visibility").notNull().default("private"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -128,76 +119,7 @@ export const runs = pgTable(
   (table) => [
     index("idx_runs_user_id").on(table.userId),
     index("idx_runs_started_at").on(table.startedAt),
-    index("idx_runs_status").on(table.status),
-    uniqueIndex("idx_runs_user_client_run_id").on(table.userId, table.clientRunId),
-  ]
-);
-
-// Run track points table
-export const runTrackPoints = pgTable(
-  "run_track_points",
-  {
-    id: text("id").primaryKey(),
-    runId: text("run_id")
-      .notNull()
-      .references(() => runs.id, { onDelete: "cascade" }),
-    sequence: integer("sequence").notNull(),
-    latitude: doublePrecision("latitude").notNull(),
-    longitude: doublePrecision("longitude").notNull(),
-    altitudeMeters: doublePrecision("altitude_meters"),
-    accuracyMeters: doublePrecision("accuracy_meters"),
-    speedMps: doublePrecision("speed_mps"),
-    headingDegrees: doublePrecision("heading_degrees"),
-    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("idx_run_track_points_run_id").on(table.runId),
-    uniqueIndex("idx_run_track_points_run_sequence").on(table.runId, table.sequence),
-    index("idx_run_track_points_run_recorded_at").on(table.runId, table.recordedAt),
-  ]
-);
-
-// Run pause periods table
-export const runPausePeriods = pgTable(
-  "run_pause_periods",
-  {
-    id: text("id").primaryKey(),
-    runId: text("run_id")
-      .notNull()
-      .references(() => runs.id, { onDelete: "cascade" }),
-    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
-    endedAt: timestamp("ended_at", { withTimezone: true }),
-    durationSeconds: integer("duration_seconds"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [index("idx_run_pause_periods_run_id").on(table.runId)]
-);
-
-// Run splits table
-export const runSplits = pgTable(
-  "run_splits",
-  {
-    id: text("id").primaryKey(),
-    runId: text("run_id")
-      .notNull()
-      .references(() => runs.id, { onDelete: "cascade" }),
-    splitNumber: integer("split_number").notNull(),
-    distanceMeters: doublePrecision("distance_meters").notNull(),
-    durationSeconds: integer("duration_seconds").notNull(),
-    paceSecondsPerKm: integer("pace_seconds_per_km").notNull(),
-    elevationGainMeters: integer("elevation_gain_meters").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("idx_run_splits_run_id").on(table.runId),
-    uniqueIndex("idx_run_splits_run_split_number").on(table.runId, table.splitNumber),
+    uniqueIndex("idx_runs_strava_activity_id").on(table.stravaActivityId),
   ]
 );
 
@@ -235,7 +157,4 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserSetting = typeof userSettings.$inferSelect;
 export type Run = typeof runs.$inferSelect;
-export type RunTrackPoint = typeof runTrackPoints.$inferSelect;
-export type RunPausePeriod = typeof runPausePeriods.$inferSelect;
-export type RunSplit = typeof runSplits.$inferSelect;
 export type DailyActivity = typeof dailyActivities.$inferSelect;

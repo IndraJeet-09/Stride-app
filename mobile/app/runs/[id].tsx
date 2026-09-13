@@ -9,8 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Calendar, Clock, Navigation, Mountain, Flame, Layers } from "lucide-react-native";
-import { RunRouteMap } from "@/components/run/RunRouteMap";
+import { ChevronLeft, Calendar, Clock, Navigation, Mountain, Flame } from "lucide-react-native";
 import { StrideAPI } from "@/lib/api/client";
 import { ApiRunDetail } from "@/lib/types";
 import {
@@ -32,7 +31,9 @@ export default function RunDetailScreen() {
     if (!id) return;
     const fetchRun = async () => {
       const res = await StrideAPI.getRunDetail(id);
-      if (res.data) setRun(res.data);
+      if (res.data) {
+        setRun(res.data);
+      }
       setLoading(false);
     };
     fetchRun();
@@ -57,13 +58,11 @@ export default function RunDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={{ color: "#F87171", fontFamily: "monospace" }}>Run not found</Text>
+          <Text style={{ color: "#F87171", fontFamily: "monospace" }}>Activity not found</Text>
         </View>
       </SafeAreaView>
     );
   }
-
-  const splits: { km: number; pace: string; paceSeconds: number; elevationGain: number }[] = [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -143,25 +142,10 @@ export default function RunDetailScreen() {
               <Text style={styles.statVal}>{run.calories} kcal</Text>
             </View>
           </View>
-
-          {run.routePolyline && (
-            <View style={styles.sectionBlock}>
-              <Text style={styles.sectionHeader}>GPS ROUTE</Text>
-              <RunRouteMap
-                points={[]}
-                title={run.title}
-                distanceKm={metersToKm(run.distanceMeters)}
-              />
-            </View>
-          )}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function metersToKm(meters: number): number {
-  return Math.round((meters / 1000) * 100) / 100;
 }
 
 const styles = StyleSheet.create({
@@ -291,15 +275,5 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: "#222222",
-  },
-  sectionBlock: {
-    gap: 10,
-  },
-  sectionHeader: {
-    color: "#71717A",
-    fontSize: 12,
-    fontFamily: "monospace",
-    letterSpacing: 1.5,
-    fontWeight: "700",
   },
 });

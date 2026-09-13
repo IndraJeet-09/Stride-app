@@ -20,20 +20,6 @@ export function logAuthEvent(
   logger.info({ event, ...details }, `Auth: ${event}`);
 }
 
-// Log run events
-export function logRunEvent(
-  event:
-    | "run_started"
-    | "run_paused"
-    | "run_resumed"
-    | "run_finished"
-    | "run_discarded"
-    | "gps_uploaded",
-  details: Record<string, unknown>
-) {
-  logger.info({ event, ...details }, `Run: ${event}`);
-}
-
 // Log errors
 export function logError(error: unknown, context?: Record<string, unknown>) {
   if (error instanceof Error) {

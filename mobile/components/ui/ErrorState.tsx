@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { MapPinOff, WifiOff, AlertOctagon } from "lucide-react-native";
+import { AlertOctagon } from "lucide-react-native";
 import { triggerHaptic } from "@/lib/haptics";
 
 interface ErrorStateProps {
-  type?: "location" | "gps" | "save" | "generic";
+  type?: "save" | "generic";
   title?: string;
   message?: string;
   actionText?: string;
@@ -12,7 +12,7 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({
-  type = "location",
+  type = "generic",
   title,
   message,
   actionText = "TRY AGAIN",
@@ -20,32 +20,14 @@ export function ErrorState({
 }: ErrorStateProps) {
   const getDetails = () => {
     switch (type) {
-      case "location":
-        return {
-          icon: MapPinOff,
-          title: title ?? "LOCATION ACCESS NEEDED",
-          message:
-            message ??
-            "Stride requires high-precision location services to accurately track your route, pace, and contribution metrics.",
-          btn: actionText || "ENABLE LOCATION",
-        };
-      case "gps":
-        return {
-          icon: WifiOff,
-          title: title ?? "GPS SIGNAL LOST",
-          message:
-            message ??
-            "Searching for satellite connection. Move to an open sky area to resume precise route tracking.",
-          btn: actionText || "RECONNECT",
-        };
       case "save":
         return {
           icon: AlertOctagon,
-          title: title ?? "UNABLE TO SAVE RUN",
+          title: title ?? "UNABLE TO SAVE",
           message:
             message ??
-            "Your activity is stored locally on this device. We will automatically sync when network returns.",
-          btn: actionText || "RETRY SYNC",
+            "Something went wrong. Please try again.",
+          btn: actionText || "RETRY",
         };
       default:
         return {
@@ -53,7 +35,7 @@ export function ErrorState({
           title: title ?? "SOMETHING WENT WRONG",
           message:
             message ??
-            "An unexpected error occurred. Please restart the tracking session.",
+            "An unexpected error occurred. Please try again.",
           btn: actionText || "DISMISS",
         };
     }

@@ -46,29 +46,7 @@ function RootLayoutNav() {
       <Stack.Screen name="login" options={{ animation: "fade" }} />
       <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
       <Stack.Screen
-        name="run/index"
-        options={{
-          presentation: "fullScreenModal",
-          animation: "slide_from_bottom",
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="run/complete"
-        options={{
-          presentation: "fullScreenModal",
-          animation: "fade",
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
         name="runs/[id]"
-        options={{
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="run/[id]"
         options={{
           animation: "slide_from_right",
         }}

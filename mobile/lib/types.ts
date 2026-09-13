@@ -176,8 +176,6 @@ export interface ApiRunDetail {
   startLongitude?: number;
   endLatitude?: number;
   endLongitude?: number;
-  routePolyline?: string;
-  notes?: string;
   visibility: string;
   createdAt: string;
   updatedAt: string;
@@ -206,33 +204,6 @@ export interface ApiStatsOverview {
     longestRunMeters: number | null;
     highestElevationMeters: number | null;
   };
-}
-
-export interface ApiRunCreated {
-  id: string;
-  status: string;
-  startedAt: string;
-  title: string;
-}
-
-export interface ApiTrackPointsResponse {
-  acceptedCount: number;
-  totalBatch: number;
-  lastSequence: number;
-}
-
-export interface ApiFinishedRun {
-  id: string;
-  status: string;
-  startedAt: string;
-  endedAt?: string;
-  distanceMeters: number;
-  durationSeconds: number;
-  movingDurationSeconds: number;
-  averagePaceSecondsPerKm: number;
-  elevationGainMeters: number;
-  elevationLossMeters: number;
-  calories: number;
 }
 
 export interface ApiError {

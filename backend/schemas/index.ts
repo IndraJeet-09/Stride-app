@@ -2,63 +2,14 @@ import { z } from "zod";
 
 // Common schemas
 export const uuidSchema = z.string().uuid();
-export const clientRunIdSchema = z.string().min(1).max(255);
 export const timestampSchema = z.string().datetime({ offset: true });
 export const timezoneSchema = z.string().min(1).max(50);
-export const latitudeSchema = z.number().min(-90).max(90);
-export const longitudeSchema = z.number().min(-180).max(180);
-export const positiveNumberSchema = z.number().positive();
-export const nonNegativeNumberSchema = z.number().nonnegative();
-
-// Run status enum
-export const runStatusSchema = z.enum([
-  "recording",
-  "paused",
-  "completed",
-  "discarded",
-]);
 
 // Visibility enum
 export const visibilitySchema = z.enum(["private", "public"]);
 
 // Unit system enum
 export const unitSystemSchema = z.enum(["metric", "imperial"]);
-
-// Start run schema
-export const startRunSchema = z.object({
-  clientRunId: clientRunIdSchema,
-  startedAt: timestampSchema.optional(),
-  timezone: timezoneSchema.optional(),
-  title: z.string().min(1).max(255).optional(),
-});
-
-// Pause/Resume run schema
-export const runIdParamSchema = z.object({
-  id: uuidSchema,
-});
-
-// Finish run schema
-export const finishRunSchema = z.object({
-  endedAt: timestampSchema.optional(),
-  notes: z.string().max(1000).optional(),
-});
-
-// GPS track point schema
-export const trackPointSchema = z.object({
-  sequence: z.number().int().positive(),
-  latitude: latitudeSchema,
-  longitude: longitudeSchema,
-  altitudeMeters: z.number().optional(),
-  accuracyMeters: z.number().positive().optional(),
-  speedMps: z.number().nonnegative().optional(),
-  headingDegrees: z.number().min(0).max(360).optional(),
-  recordedAt: timestampSchema,
-});
-
-// Batch track points schema
-export const batchTrackPointsSchema = z.object({
-  points: z.array(trackPointSchema).min(1).max(100), // Max 100 points per batch
-});
 
 // Update user profile schema
 export const updateProfileSchema = z.object({
@@ -94,7 +45,6 @@ export const paginationSchema = z.object({
 export const runQuerySchema = paginationSchema.extend({
   from: timestampSchema.optional(),
   to: timestampSchema.optional(),
-  status: runStatusSchema.optional(),
   sort: z.enum(["asc", "desc"]).default("desc"),
 });
 
@@ -103,9 +53,6 @@ export const contributionQuerySchema = z.object({
 });
 
 // Type exports
-export type StartRunInput = z.infer<typeof startRunSchema>;
-export type FinishRunInput = z.infer<typeof finishRunSchema>;
-export type BatchTrackPointsInput = z.infer<typeof batchTrackPointsSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 export type RunQuery = z.infer<typeof runQuerySchema>;

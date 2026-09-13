@@ -6,10 +6,6 @@ export const ErrorCode = {
   FORBIDDEN: "FORBIDDEN",
   VALIDATION_ERROR: "VALIDATION_ERROR",
   NOT_FOUND: "NOT_FOUND",
-  RUN_NOT_FOUND: "RUN_NOT_FOUND",
-  INVALID_RUN_STATE: "INVALID_RUN_STATE",
-  DUPLICATE_CLIENT_RUN: "DUPLICATE_CLIENT_RUN",
-  INVALID_GPS_POINT: "INVALID_GPS_POINT",
   RATE_LIMITED: "RATE_LIMITED",
   INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const;
@@ -31,22 +27,6 @@ export class AppError extends Error {
 // Specific error factories
 export function notFoundError(message: string = "Resource not found"): AppError {
   return new AppError(ErrorCode.NOT_FOUND, message, 404);
-}
-
-export function runNotFoundError(): AppError {
-  return new AppError(ErrorCode.RUN_NOT_FOUND, "Run not found", 404);
-}
-
-export function invalidRunStateError(message: string): AppError {
-  return new AppError(ErrorCode.INVALID_RUN_STATE, message, 409);
-}
-
-export function duplicateClientRunError(): AppError {
-  return new AppError(
-    ErrorCode.DUPLICATE_CLIENT_RUN,
-    "Run with this client ID already exists",
-    409
-  );
 }
 
 export function authenticationError(message: string = "Authentication required"): AppError {

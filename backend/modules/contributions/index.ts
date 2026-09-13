@@ -1,7 +1,14 @@
 import { db } from "@/db";
 import { dailyActivities, runs } from "@/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { calculateContributionLevel } from "@/lib/geo";
+function calculateContributionLevel(distanceMeters: number): number {
+  const distanceKm = distanceMeters / 1000;
+  if (distanceKm === 0) return 0;
+  if (distanceKm < 3) return 1;
+  if (distanceKm < 6) return 2;
+  if (distanceKm < 10) return 3;
+  return 4;
+}
 
 export interface ContributionDay {
   date: string;

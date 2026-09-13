@@ -12,7 +12,6 @@ import { useRouter } from "expo-router";
 import { Flame, Clock, Navigation, ChevronRight, Sparkles } from "lucide-react-native";
 import { StreakCard } from "@/components/home/StreakCard";
 import { WeeklyGrid } from "@/components/home/WeeklyGrid";
-import { HeroStartRun } from "@/components/home/HeroStartRun";
 import { ContributionGraph } from "@/components/contribution/ContributionGraph";
 import { StrideAPI } from "@/lib/api/client";
 import {
@@ -102,7 +101,7 @@ export default function HomeScreen() {
 
   const handleRunPress = (runId: string) => {
     triggerHaptic("light");
-    router.push(`/runs/${runId}`);
+    router.push(`/runs/${runId}` as any);
   };
 
   const userName = dashboard?.user?.displayName || dashboard?.user?.username || "Runner";
@@ -160,8 +159,6 @@ export default function HomeScreen() {
             monthlyDistanceMeters={dashboard?.monthly?.distanceMeters ?? 0}
           />
 
-          <HeroStartRun />
-
           <View style={styles.sectionBlock}>
             <View style={styles.sectionTitleRow}>
               <Sparkles size={15} color="#EA580C" />
@@ -193,7 +190,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionHeader}>RECENT ACTIVITY</Text>
 
             {runs.length === 0 && (
-              <Text style={styles.noRunsText}>No runs yet. Start your first run!</Text>
+              <Text style={styles.noRunsText}>No activities yet. Connect Strava to get started.</Text>
             )}
 
             {runs.slice(0, 1).map((run) => (
@@ -203,7 +200,7 @@ export default function HomeScreen() {
                 onPress={() => handleRunPress(run.id)}
                 style={styles.recentRunCard}
                 accessibilityRole="button"
-                accessibilityLabel={`Recent run: ${run.title}, ${metersToKmString(run.distanceMeters)} kilometers`}
+                accessibilityLabel={`Recent activity: ${run.title}, ${metersToKmString(run.distanceMeters)} kilometers`}
               >
                 <View style={styles.runTopRow}>
                   <View>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/middleware/auth";
 import { getOrCreateUser } from "@/modules/auth";
 import { db } from "@/db";
-import { users, runs, runTrackPoints, runPausePeriods, runSplits, dailyActivities } from "@/db/schema";
+import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { handleApiError } from "@/lib/errors";
 import { createRequestLogger } from "@/lib/logging";
