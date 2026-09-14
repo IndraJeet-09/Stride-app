@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+@theme {
+  /* Background system */
+  --color-background: #050507;
+  --color-surface: #09090D;
+  --color-surface-elevated: #0F0F16;
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  /* Text system */
+  --color-foreground: #F5F5F7;
+  --color-muted: #A1A1AA;
+  --color-subtle: #71717A;
+
+  /* Purple accent system */
+  --color-purple-500: #7C3AED;
+  --color-purple-400: #8B5CF6;
+  --color-purple-300: #A78BFA;
+  --color-purple-200: #C4B5FD;
+
+  /* Font families */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+/* Base styles */
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* Hide native cursor on all interactive elements when custom cursor is active */
+@media (pointer: fine) and (hover: hover) {
+  a,
+  button,
+  [role="button"],
+  [data-cursor-pointer] {
+    cursor: none !important;
+  }
+}
+
+/* Restore normal cursor on touch devices */
+@media (pointer: coarse) {
+  body {
+    cursor: auto !important;
+  }
+
+  a,
+  button,
+  [role="button"],
+  [data-cursor-pointer] {
+    cursor: pointer !important;
+  }
+}
+
+/* Restore cursor for text inputs and editable content */
+input,
+textarea,
+[contenteditable] {
+  cursor: text !important;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom cursor will be hidden on mobile */
+@media (pointer: coarse) or (hover: none) {
+  body {
+    cursor: auto !important;
+  }
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Vignette */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(5, 5, 7, 0.4) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Ensure content is above overlays */
+#__next {
+  position: relative;
+  z-index: 2;
+}
+
+/* Text utilities */
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Selection styling */
+::selection {
+  background-color: rgba(124, 58, 237, 0.3);
+  color: var(--color-foreground);
+}
+
+/* Smooth scrolling on desktop only */
+@media (hover: hover) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  body {
+    cursor: auto !important;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 58, 237, 0.3) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.5);
+}
